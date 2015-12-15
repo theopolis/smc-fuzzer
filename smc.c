@@ -300,10 +300,55 @@ kern_return_t SMCPrintFans(void) {
   return kIOReturnSuccess;
 }
 
+kern_return_t SMCFuzz(SMCVal_t val, bool fixed_key, bool fixed_val) {
+  SMCVal_t write;
+
+  if (fixed_key && fixed_val) {
+    fprintf(stderr, "Cannot fuzz with a fixed value and key.\n");
+    return 1;
+  }
+
+  if (fixed_key) {
+    fprintf(stderr, "Fuzzing using a fixed key: %s\n", val.key);
+    memcpy(write.key, val.key, sizeof(val.key));
+  }
+
+  if (fixed_val) {
+    val.key[0] = 0;
+    fprintf(stderr, "Fuzzing using a fixed value: ");
+    printVal(val);
+  } else if (!fixed_key) {
+    fprintf(stderr, "Fuzzing keys using 0x01\n");
+    write.bytes[0] = 1;
+    write.dataSize = 1;
+  }
+
+  char k = 33;
+  size_t max = 125 - 33;
+  for (size_t i = 0; i < max; i++) {
+    write.key[0] = k + i;
+    for (size_t ii = 0; ii < max; ii++) {
+      write.key[1] = k + ii;
+      for (size_t iii = 0; iii < max; iii++) {
+        write.key[2] = k + iii;
+        for (size_t iiii = 0; iiii < max; iiii++) {
+          write.key[3] = k + iiii;
+          if (SMCWriteKey(write) == kIOReturnSuccess) {
+            printf("%s writable\n", val.key);
+          }
+        }
+      }
+    }
+  }
+
+  return kIOReturnSuccess;
+}
+
 void usage(char *prog) {
   printf("Apple System Management Control (SMC) tool %s\n", VERSION);
   printf("Usage:\n");
   printf("%s [options]\n", prog);
+  printf("    -z         : fuzz all possible keys\n");
   printf("    -f         : fan info decoded\n");
   printf("    -h         : help\n");
   printf("    -k <key>   : key to manipulate\n");
@@ -324,12 +369,14 @@ int main(int argc, char *argv[]) {
   UInt32Char_t key = "\0";
   SMCVal_t val;
 
-  while ((c = getopt(argc, argv, "fhk:lrw:v")) != -1) {
+  bool fixed_key = false, fixed_val = false;
+  while ((c = getopt(argc, argv, "fhk:lrw:vz")) != -1) {
     switch (c) {
     case 'f':
       op = OP_READ_FAN;
       break;
     case 'k':
+      fixed_key = true;
       snprintf(key, 5, "%s", optarg);
       break;
     case 'l':
@@ -343,7 +390,11 @@ int main(int argc, char *argv[]) {
       return 0;
       break;
     case 'w':
-      op = OP_WRITE;
+      fixed_val = true;
+      if (op != OP_FUZZ) {
+        op = OP_WRITE;
+      }
+
       {
         int i, j, k1, k2;
         char c;
@@ -354,9 +405,6 @@ int main(int argc, char *argv[]) {
           c = *p++;
           k1 = k2 = 0;
           i++;
-          /*if (c=' ') {
-                  c = *p++; i++;
-          }*/
           if ((c >= '0') && (c <= '9')) {
             k1 = c - '0';
           } else if ((c >= 'a') && (c <= 'f')) {
@@ -364,29 +412,23 @@ int main(int argc, char *argv[]) {
           }
           c = *p++;
           i++;
-          /*if (c=' ') {
-                  c = *p++; i++;
-          }*/
           if ((c >= '0') && (c <= '9')) {
             k2 = c - '0';
           } else if ((c >= 'a') && (c <= 'f')) {
             k2 = c - 'a' + 10;
           }
 
-          // snprintf(c, 2, "%c%c", optarg[i * 2], optarg[(i * 2) + 1]);
           val.bytes[j++] = (int)(((k1 & 0xf) << 4) + (k2 & 0xf));
         }
         val.dataSize = j;
-        /* if ((val.dataSize * 2) != strlen(optarg))
-         {
-             printf("Error: value is not valid\n");
-             return 1;
-         }*/
       }
       break;
     case 'h':
     case '?':
       op = OP_NONE;
+      break;
+    case 'z':
+      op = OP_FUZZ;
       break;
     }
   }
@@ -443,6 +485,11 @@ int main(int argc, char *argv[]) {
       retcode = 2;
     }
     break;
+  case OP_FUZZ:
+    if (strlen(key) > 0) {
+      snprintf(val.key, 5, "%s", key);
+    }
+    result = SMCFuzz(val, fixed_key, fixed_val);
   }
 
   SMCClose(conn);

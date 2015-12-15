@@ -35,6 +35,7 @@
 #define OP_READ 2
 #define OP_READ_FAN 3
 #define OP_WRITE 4
+#define OP_FUZZ 5
 
 #define KERNEL_INDEX_SMC 2
 
