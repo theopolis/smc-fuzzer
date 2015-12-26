@@ -28,7 +28,7 @@
 //#include "OSTypes.h"
 #include <IOKit/IOKitLib.h>
 
-#define VERSION "0.90"
+#define VERSION "1.01"
 
 #define OP_NONE 0
 #define OP_LIST 1
@@ -36,6 +36,7 @@
 #define OP_READ_FAN 3
 #define OP_WRITE 4
 #define OP_FUZZ 5
+#define OP_COMPARE 6
 
 #define KERNEL_INDEX_SMC 2
 
