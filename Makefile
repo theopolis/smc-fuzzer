@@ -1,13 +1,14 @@
-CC = gcc
-CFLAGS = -Wall -g -framework IOKit -framework CoreFoundation
+CXX = clang++
+CXXFLAGS = -Wall -g -std=c++11 -stdlib=libc++
+LFLAGS = -framework IOKit -framework CoreFoundation
 
 all: smc 
 
 smc: smc.o
-	$(CC) $(CFLAGS) -o smc smc.o
+	$(CXX) $(CXXFLAGS) $(LFLAGS) -o smc smc.o
 
-smc.o: smc.h smc.c OSTypes.h
-	$(CC) -c smc.c
+smc.o: smc.h smc.cpp OSTypes.h
+	$(CXX) $(CXXFLAGS) -c smc.cpp
 
 clean:
 	-rm -f smc smc.o
