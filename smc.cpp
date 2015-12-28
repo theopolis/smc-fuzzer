@@ -355,8 +355,8 @@ void SMCDetectChange(char value, SMCVal_t write) {
     }
   }
 
-  printf("%s writable %s\n", write.key,
-         (value_changed) ? "and modifiable" : "only");
+  printf("%s writable %s using value %d\n", write.key,
+         (value_changed) ? "and modifiable" : "only", write.bytes[0]);
 }
 
 kern_return_t SMCFuzz(SMCVal_t val, bool fixed_key, bool fixed_val) {
@@ -385,7 +385,11 @@ kern_return_t SMCFuzz(SMCVal_t val, bool fixed_key, bool fixed_val) {
   if (fixed_key) {
     fprintf(stderr, "Fuzzing using a fixed key: %s\n", val.key);
     memcpy(write.key, val.key, sizeof(val.key));
-    // (TODO): Not implemented.
+    for (size_t i = 0; i < 0xFF; i++) {
+      write.bytes[0] = i;
+      SMCDetectChange(i, write);
+    }
+
     return kIOReturnSuccess;
   }
 
