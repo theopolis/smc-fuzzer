@@ -2,6 +2,10 @@
 
 *devnull*'s SMC read/write code, along with simple fuzz options.
 
+This `smc` tool uses the `AppleSMC` IOKit interface and a userland API
+for interacting with the System Management Controller (Mac embedded controllers).
+The tool focuses on the SMC key/value API, but could be expanded to more API methods.
+
 ### Help / Usage
 
 ```
@@ -9,7 +13,7 @@ $ ./smc -h
 Apple System Management Control (SMC) tool 1.01
 Usage:
 ./smc [options]
-    -q         : attempt to determine 'hidden' keys
+    -q         : attempt to discover 'hidden' keys
     -z         : fuzz all possible keys (or one key using -k)
     -f         : fan info decoded
     -h         : help
@@ -45,7 +49,7 @@ On a few Mac Pros this has found:
 ### A bad time
 
 Changing simple values as the super user will halt your machine.
-Example: if you set `DSUB` to `1` your machine will instant-halt.
+Example: if you set `DUSR` to `1` your machine will instant-halt.
 
 ```
 $ make
@@ -60,5 +64,14 @@ No value should be writable as a non-privileged user.
 $ make
 $ ./smc -z
 ```
+
+### Resources
+
+- [@jBot-42](https://github.com/Jbot-42) - [A complete guide to SMC](http://jbot-42.github.io/Articles/smc.html) for programmers
+- Alex Ionescu - [Apple SMC The place to be definitely, for an implant](https://www.youtube.com/watch?v=nSqpinjjgmg) (RECon 2014 video)
+- Alex Ionescu - ["Spell"unking in Apple SMC Land](http://www.nosuchcon.org/talks/2013/D1_02_Alex_Ninjas_and_Harry_Potter.pdf) NoSuchCon 2013
+- InversePath (Andrea Barisani, Daniele Bianco) - [Embedded systems exploitation](https://dev.inversepath.com/download/public/embedded_systems_exploitation.pdf), includes several slides on SMC
+- Trammell Hudson - [Thunderstrike 31C3](https://trmm.net/Thunderstrike_31c3), a class of EFI/firmware attacks
+- Apple - [HT201518](https://support.apple.com/en-us/HT201518) downloads for several SMC versions
 
 

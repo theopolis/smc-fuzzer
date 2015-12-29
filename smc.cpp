@@ -1,5 +1,6 @@
 /*
  * Apple System Management Control (SMC) Tool
+ * Copyright (C) 2015 theopolis
  * Copyright (C) 2006 devnull
  *
  * This program is free software; you can redistribute it and/or
@@ -418,7 +419,7 @@ void usage(char *prog) {
   printf("Apple System Management Control (SMC) tool %s\n", VERSION);
   printf("Usage:\n");
   printf("%s [options]\n", prog);
-  printf("    -q         : attempt to determine 'hidden' keys\n");
+  printf("    -q         : attempt to discover 'hidden' keys\n");
   printf("    -z         : fuzz all possible keys (or one key using -k)\n");
   printf("    -f         : fan info decoded\n");
   printf("    -h         : help\n");
