@@ -13,6 +13,7 @@ $ ./smc -h
 Apple System Management Control (SMC) tool 1.01
 Usage:
 ./smc [options]
+    -c <spell> : cast a spell
     -q         : attempt to discover 'hidden' keys
     -z         : fuzz all possible keys (or one key using -k)
     -f         : fan info decoded
@@ -45,6 +46,10 @@ On a few Mac Pros this has found:
 ```
 
 `OSK0` and `OSK1` are the 64-byte [binary protection key](http://osxbook.com/book/bonus/chapter7/tpmdrmmyth/).
+
+`KPPW` and `KPST` are protection inputs and status keys.
+Refer to Alex Ionescu's RECON 2014 talk and use the `-c` switch.
+Setting the correct key allows enumerating 'hidden' keys and mutating their values.
 
 ### A bad time
 
