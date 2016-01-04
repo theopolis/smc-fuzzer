@@ -49,8 +49,13 @@ UInt32 _strtoul(const char *str, int size, int base) {
 
 void _ultostr(char *str, UInt32 val) {
   str[0] = '\0';
-  snprintf(str, 5, "%c%c%c%c", (unsigned int)val >> 24, (unsigned int)val >> 16,
-           (unsigned int)val >> 8, (unsigned int)val);
+  snprintf(str,
+           5,
+           "%c%c%c%c",
+           (unsigned int)val >> 24,
+           (unsigned int)val >> 16,
+           (unsigned int)val >> 8,
+           (unsigned int)val);
 }
 
 float _strtof(char *str, int size, int e) {
@@ -137,7 +142,8 @@ kern_return_t SMCOpen(io_connect_t *conn) {
 
 kern_return_t SMCClose(io_connect_t conn) { return IOServiceClose(conn); }
 
-kern_return_t SMCCall(uint32_t selector, SMCKeyData_t *inputStructure,
+kern_return_t SMCCall(uint32_t selector,
+                      SMCKeyData_t *inputStructure,
                       SMCKeyData_t *outputStructure) {
   size_t structureInputSize;
   size_t structureOutputSize;
@@ -145,8 +151,11 @@ kern_return_t SMCCall(uint32_t selector, SMCKeyData_t *inputStructure,
   structureInputSize = sizeof(SMCKeyData_t);
   structureOutputSize = sizeof(SMCKeyData_t);
 
-  return IOConnectCallStructMethod(kIOConnection, selector, inputStructure,
-                                   structureInputSize, outputStructure,
+  return IOConnectCallStructMethod(kIOConnection,
+                                   selector,
+                                   inputStructure,
+                                   structureInputSize,
+                                   outputStructure,
                                    &structureOutputSize);
 }
 
@@ -164,7 +173,8 @@ kern_return_t SMCReadKey(const std::string &key, SMCVal_t *val) {
   inputStructure.data8 = SMC_CMD_READ_KEYINFO;
 
   result = SMCCall(KERNEL_INDEX_SMC, &inputStructure, &outputStructure);
-  if (result != kIOReturnSuccess) return result;
+  if (result != kIOReturnSuccess)
+    return result;
 
   val->dataSize = outputStructure.keyInfo.dataSize;
   _ultostr(val->dataType, outputStructure.keyInfo.dataType);
@@ -172,7 +182,8 @@ kern_return_t SMCReadKey(const std::string &key, SMCVal_t *val) {
   inputStructure.data8 = SMC_CMD_READ_BYTES;
 
   result = SMCCall(KERNEL_INDEX_SMC, &inputStructure, &outputStructure);
-  if (result != kIOReturnSuccess) return result;
+  if (result != kIOReturnSuccess)
+    return result;
 
   memcpy(val->bytes, outputStructure.bytes, sizeof(outputStructure.bytes));
 
@@ -217,8 +228,12 @@ UInt32 SMCReadIndexCount(void) {
 
   SMCReadKey("#KEY", &val);
   num = ((int)val.bytes[2] << 8) + ((unsigned)val.bytes[3] & 0xff);
-  printf("Num: b0=%x b1=%x b2=%x b3=%x size=%d\n", val.bytes[0], val.bytes[1],
-         val.bytes[2], val.bytes[3], (unsigned int)val.dataSize);
+  printf("Num: b0=%x b1=%x b2=%x b3=%x size=%d\n",
+         val.bytes[0],
+         val.bytes[1],
+         val.bytes[2],
+         val.bytes[3],
+         (unsigned int)val.dataSize);
   return num;
 }
 
@@ -256,6 +271,38 @@ kern_return_t SMCPrintAll(const std::vector<std::string> &keys) {
   }
 
   return kIOReturnSuccess;
+}
+
+bool SMCCast(const char spell[33]) {
+  SMCVal_t val;
+  snprintf(val.key, 5, "KPPW");
+  val.dataSize = strlen(spell);
+  snprintf(val.dataType, 5, "ch8*");
+  for (size_t i = 0; i < val.dataSize /* 32 */; i++) {
+    val.bytes[i] = spell[i];
+  }
+
+  kern_return_t result = SMCWriteKey(val);
+  fprintf(stderr,
+          "Wrote '%s' (size %d) to KPPW: %d\n",
+          spell,
+          val.dataSize,
+          result);
+
+  SMCVal_t result_val;
+  result = SMCReadKey("KPST", &result_val);
+  if (result != kIOReturnSuccess) {
+    fprintf(stderr, "Could not read KPST value: %d\n", result);
+  }
+
+  uint8_t response = result_val.bytes[0];
+  if (response != 1) {
+    fprintf(stderr, "Your spell: '%s' was incorrect: (%d)\n", spell, response);
+  } else {
+    fprintf(stderr, "Success KPST: %d\n", response);
+  }
+
+  return (response == 1);
 }
 
 kern_return_t SMCCompare(const std::vector<std::string> &keys) {
@@ -297,7 +344,8 @@ kern_return_t SMCPrintFans(void) {
   int totalFans, i;
 
   result = SMCReadKey("FNum", &val);
-  if (result != kIOReturnSuccess) return kIOReturnError;
+  if (result != kIOReturnSuccess)
+    return kIOReturnError;
 
   totalFans = _strtoul(val.bytes, val.dataSize, 10);
   printf("Total fans in system: %d\n", totalFans);
@@ -307,7 +355,8 @@ kern_return_t SMCPrintFans(void) {
     snprintf(key, 5, "F%dAc", i);
     SMCReadKey(key, &val);
     printf("    Actual speed : %.0f Key[%s]\n",
-           _strtof(val.bytes, val.dataSize, 2), key);
+           _strtof(val.bytes, val.dataSize, 2),
+           key);
     snprintf(key, 5, "F%dMn", i);
     SMCReadKey(key, &val);
     printf("    Minimum speed: %.0f\n", _strtof(val.bytes, val.dataSize, 2));
@@ -356,8 +405,10 @@ void SMCDetectChange(char value, SMCVal_t write) {
     }
   }
 
-  printf("%s writable %s using value %d\n", write.key,
-         (value_changed) ? "and modifiable" : "only", write.bytes[0]);
+  printf("%s writable %s using value %d\n",
+         write.key,
+         (value_changed) ? "and modifiable" : "only",
+         write.bytes[0]);
 }
 
 kern_return_t SMCFuzz(SMCVal_t val, bool fixed_key, bool fixed_val) {
@@ -419,6 +470,7 @@ void usage(char *prog) {
   printf("Apple System Management Control (SMC) tool %s\n", VERSION);
   printf("Usage:\n");
   printf("%s [options]\n", prog);
+  printf("    -c <spell> : cast a spell\n");
   printf("    -q         : attempt to discover 'hidden' keys\n");
   printf("    -z         : fuzz all possible keys (or one key using -k)\n");
   printf("    -f         : fan info decoded\n");
@@ -439,73 +491,78 @@ int main(int argc, char *argv[]) {
   kern_return_t result;
   int op = OP_NONE;
   UInt32Char_t key = "\0";
+  char spell[33] = {0};
   SMCVal_t val;
 
   bool fixed_key = false, fixed_val = false;
-  while ((c = getopt(argc, argv, "fhk:lrw:vzq")) != -1) {
+  while ((c = getopt(argc, argv, "fhk:lrw:c:vzq")) != -1) {
     switch (c) {
-      case 'f':
-        op = OP_READ_FAN;
-        break;
-      case 'k':
-        fixed_key = true;
-        snprintf(key, 5, "%s", optarg);
-        break;
-      case 'l':
-        op = OP_LIST;
-        break;
-      case 'r':
-        op = OP_READ;
-        break;
-      case 'v':
-        printf("%s\n", VERSION);
-        return 0;
-        break;
-      case 'w':
-        fixed_val = true;
-        if (op != OP_FUZZ) {
-          op = OP_WRITE;
-        }
+    case 'f':
+      op = OP_READ_FAN;
+      break;
+    case 'c':
+      snprintf(spell, 33, "%s", optarg);
+      op = OP_CAST;
+    case 'k':
+      fixed_key = true;
+      snprintf(key, 5, "%s", optarg);
+      break;
+    case 'l':
+      op = OP_LIST;
+      break;
+    case 'r':
+      op = OP_READ;
+      break;
+    case 'v':
+      printf("%s\n", VERSION);
+      return 0;
+      break;
+    case 'w':
+      fixed_val = true;
+      if (op != OP_FUZZ) {
+        op = OP_WRITE;
+      }
 
-        {
-          int i, j, k1, k2;
-          char c;
-          char *p = optarg;
-          j = 0;
-          i = 0;
-          while (i < strlen(optarg)) {
-            c = *p++;
-            k1 = k2 = 0;
-            i++;
-            if ((c >= '0') && (c <= '9')) {
-              k1 = c - '0';
-            } else if ((c >= 'a') && (c <= 'f')) {
-              k1 = c - 'a' + 10;
-            }
-            c = *p++;
-            i++;
-            if ((c >= '0') && (c <= '9')) {
-              k2 = c - '0';
-            } else if ((c >= 'a') && (c <= 'f')) {
-              k2 = c - 'a' + 10;
-            }
-
-            val.bytes[j++] = (int)(((k1 & 0xf) << 4) + (k2 & 0xf));
+      {
+        size_t i;
+        int j, k1, k2;
+        char c;
+        char *p = optarg;
+        j = 0;
+        i = 0;
+        while (i < strlen(optarg)) {
+          c = *p++;
+          k1 = k2 = 0;
+          i++;
+          if ((c >= '0') && (c <= '9')) {
+            k1 = c - '0';
+          } else if ((c >= 'a') && (c <= 'f')) {
+            k1 = c - 'a' + 10;
           }
-          val.dataSize = j;
+          c = *p++;
+          i++;
+          if ((c >= '0') && (c <= '9')) {
+            k2 = c - '0';
+          } else if ((c >= 'a') && (c <= 'f')) {
+            k2 = c - 'a' + 10;
+          }
+
+          val.bytes[j++] = (int)(((k1 & 0xf) << 4) + (k2 & 0xf));
         }
-        break;
-      case 'h':
-      case '?':
-        op = OP_NONE;
-        break;
-      case 'z':
-        // Allow the fuzzing request to override write/read.
-        op = OP_FUZZ;
-        break;
-      case 'q':
-        op = OP_COMPARE;
-        break;
+        val.dataSize = j;
+      }
+      break;
+    case 'h':
+    case '?':
+      op = OP_NONE;
+      break;
+    case 'z':
+      // Allow the fuzzing request to override write/read.
+      op = OP_FUZZ;
+      break;
+    case 'q':
+      op = OP_COMPARE;
+      break;
     }
   }
 
@@ -518,68 +575,73 @@ int main(int argc, char *argv[]) {
 
   int retcode = 0;
   switch (op) {
-    case OP_LIST:
-      SMCGetKeys(kSMCKeys);
-      result = SMCPrintAll(kSMCKeys);
+  case OP_LIST:
+    SMCGetKeys(kSMCKeys);
+    result = SMCPrintAll(kSMCKeys);
+    if (result != kIOReturnSuccess) {
+      fprintf(stderr, "Error: SMCPrintAll() = %08x\n", result);
+      retcode = 1;
+    }
+    break;
+  case OP_READ:
+    if (strlen(key) > 0) {
+      result = SMCReadKey(key, &val);
       if (result != kIOReturnSuccess) {
-        fprintf(stderr, "Error: SMCPrintAll() = %08x\n", result);
+        fprintf(stderr, "Error: SMCReadKey() = %08x\n", result);
         retcode = 1;
       }
-      break;
-    case OP_READ:
-      if (strlen(key) > 0) {
-        result = SMCReadKey(key, &val);
-        if (result != kIOReturnSuccess) {
-          fprintf(stderr, "Error: SMCReadKey() = %08x\n", result);
-          retcode = 1;
-        }
 
-        else {
-          printVal(val);
-        }
-      } else {
-        printf("Error: specify a key to read\n");
-        retcode = 2;
+      else {
+        printVal(val);
       }
-      break;
-    case OP_READ_FAN:
-      result = SMCPrintFans();
+    } else {
+      printf("Error: specify a key to read\n");
+      retcode = 2;
+    }
+    break;
+  case OP_READ_FAN:
+    result = SMCPrintFans();
+    if (result != kIOReturnSuccess) {
+      fprintf(stderr, "Error: SMCPrintFans() = %08x\n", result);
+      retcode = 2;
+    }
+    break;
+  case OP_WRITE:
+    if (strlen(key) > 0) {
+      snprintf(val.key, 5, "%s", key);
+      result = SMCWriteKey(val);
       if (result != kIOReturnSuccess) {
-        fprintf(stderr, "Error: SMCPrintFans() = %08x\n", result);
-        retcode = 2;
-      }
-      break;
-    case OP_WRITE:
-      if (strlen(key) > 0) {
-        snprintf(val.key, 5, "%s", key);
-        result = SMCWriteKey(val);
-        if (result != kIOReturnSuccess) {
-          fprintf(stderr, "Error: SMCWriteKey() = %08x\n", result);
-          retcode = 1;
-        }
-      } else {
-        printf("Error: specify a key to write\n");
-        retcode = 2;
-      }
-      break;
-    case OP_FUZZ:
-      if (strlen(key) > 0) {
-        snprintf(val.key, 5, "%s", key);
-      }
-      result = SMCFuzz(val, fixed_key, fixed_val);
-      if (result != kIOReturnSuccess) {
-        fprintf(stderr, "Error: SMCFuzz() = %08x\n", result);
+        fprintf(stderr, "Error: SMCWriteKey() = %08x\n", result);
         retcode = 1;
       }
-      break;
-    case OP_COMPARE:
-      SMCGetKeys(kSMCKeys);
-      result = SMCCompare(kSMCKeys);
-      if (result != kIOReturnSuccess) {
-        fprintf(stderr, "Error: SMCCompare() = %08x\n", result);
-        retcode = 1;
-      }
-      break;
+    } else {
+      printf("Error: specify a key to write\n");
+      retcode = 2;
+    }
+    break;
+  case OP_CAST:
+    if (!SMCCast(spell)) {
+      retcode = 1;
+    }
+    break;
+  case OP_FUZZ:
+    if (strlen(key) > 0) {
+      snprintf(val.key, 5, "%s", key);
+    }
+    result = SMCFuzz(val, fixed_key, fixed_val);
+    if (result != kIOReturnSuccess) {
+      fprintf(stderr, "Error: SMCFuzz() = %08x\n", result);
+      retcode = 1;
+    }
+    break;
+  case OP_COMPARE:
+    SMCGetKeys(kSMCKeys);
+    result = SMCCompare(kSMCKeys);
+    if (result != kIOReturnSuccess) {
+      fprintf(stderr, "Error: SMCCompare() = %08x\n", result);
+      retcode = 1;
+    }
+    break;
   }
 
   SMCClose(kIOConnection);

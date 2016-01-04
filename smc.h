@@ -37,6 +37,7 @@
 #define OP_WRITE 4
 #define OP_FUZZ 5
 #define OP_COMPARE 6
+#define OP_CAST 7
 
 #define KERNEL_INDEX_SMC 2
 
