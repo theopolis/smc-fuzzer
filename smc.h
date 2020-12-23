@@ -53,6 +53,7 @@
 #define DATATYPE_UINT16 "ui16"
 #define DATATYPE_UINT32 "ui32"
 #define DATATYPE_SP78 "sp78"
+#define DATATYPE_FLT "flt "
 
 // key values
 /*#define SMC_KEY_CPU_TEMP      "TC0D"

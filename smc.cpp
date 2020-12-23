@@ -72,6 +72,10 @@ float _strtof(char *str, int size, int e) {
   return total;
 }
 
+void printFLT(SMCVal_t val) {
+  printf("%.0f ", *reinterpret_cast<float*>(val.bytes));
+}
+
 void printFPE2(SMCVal_t val) {
   /* FIXME: This decode is incomplete, last 2 bits are dropped */
 
@@ -100,6 +104,8 @@ void printVal(SMCVal_t val) {
       printUInt(val);
     else if (strcmp(val.dataType, DATATYPE_FPE2) == 0)
       printFPE2(val);
+    else if (strcmp(val.dataType, DATATYPE_FLT) == 0)
+      printFLT(val);
 
     printBytesHex(val);
   } else {
